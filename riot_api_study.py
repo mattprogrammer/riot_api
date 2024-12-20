@@ -1,42 +1,28 @@
-import requests;
+from api_riot.lol import lol_api as lol
 
-API_KEY = "RGAPI-e7760ebe-c3c2-48ee-982f-f54cf4db0191"
-REGION = "br1" 
-PLATFORM = "americas"
-
-def get_puuid(nome, tag):
-    """Obtem o PUUID do invocador."""
-    url = f"https://{PLATFORM}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{nome}/{tag}"
-    headers = {"X-Riot-Token": API_KEY}
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.json()["puuid"]
-
-def get_match_ids(puuid, count=10):
-    """Obtem IDs das partidas."""
-    url = f"https://{PLATFORM}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?count={count}"
-    headers = {"X-Riot-Token": API_KEY}
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.json()
-
-def get_match_details(match_id):
-    """Obtem detalhes de uma partida."""
-    url = f"https://{PLATFORM}.api.riotgames.com/lol/match/v5/matches/{match_id}"
-    headers = {"X-Riot-Token": API_KEY}
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.json()
-
-nome = "PowerPoint 2010"
-game_tag = "OFFIC"
-puuid = get_puuid(nome, game_tag)
-match_ids = get_match_ids(puuid)
-
-for match_id in match_ids:
-    match_details = get_match_details(match_id)
+def main():
+    nome = input("Digite seu nome de invovador:")
+    game_tag = input("Digite sua #TAG:")
     
-    player_data = next(player for player in match_details["info"]["participants"] if player["puuid"] == puuid)
+    try:
+        puuid = lol.get_puuid(nome, game_tag)
+        match_ids = lol.get_match_ids(puuid)
+    except Exception as ex:
+        print(f"Não foi possível encontrar o invocador. Erro: {ex}")
     
-    champion_name = player_data["championName"]
-    print(champion_name)
+    print("O que deseja fazer?")
+    tipo_processo = input("1 - Saber meu pior campeão.    2 - Saber meu melhor campeão.     3 - Últimos 10 campeões jogados.")
+    
+    
+    if tipo_processo == "3":
+        for match_id in match_ids:
+            match_details = lol.get_match_details(match_id)
+                
+            player_data = next(player for player in match_details["info"]["participants"] if player["puuid"] == puuid)
+                
+            champion_name = player_data["championName"]
+            print(champion_name)
+            
+
+    if tipo_processo == "1":
+        
