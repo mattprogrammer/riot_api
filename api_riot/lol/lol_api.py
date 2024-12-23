@@ -48,14 +48,16 @@ def get_last_champions(partidas, puuid):
 @app.get("/lol/piores-campeoes")
 def get_worst_champions(nome, game_tag, numero_partidas):
     rank = obtem_rank_campeoes(nome, game_tag, numero_partidas)
-    print(f"Seu pior campeão foi {rank[-1]}")
-    return {"message": f"Seu pior campeão foi {rank[-1]}."}
+    pior_campeao = next(iter(reversed(rank.items())))
+    print(f"Seu pior campeão foi {pior_campeao[0]}, com um KDA médio de {pior_campeao[1]}")
+    return {"message": f"Seu pior campeão foi {pior_campeao[0]}, com um KDA médio de {pior_campeao[1]}"}
 
 @app.get("/lol/melhores-campeoes")
 def get_best_champions(nome, game_tag, numero_partidas):
     rank = obtem_rank_campeoes(nome, game_tag, numero_partidas)
-    print(f"Seu melhor campeão foi {rank[0]}")
-    return {"message": f"Seu melhor campeão foi {rank[0]}."}
+    melhor_campeao = next(iter(rank.items()))
+    print(f"Seu melhor campeão foi {melhor_campeao[0]}, com um KDA médio de {melhor_campeao[1]}")
+    return {"message": f"Seu melhor campeão foi {melhor_campeao[0]}, com um KDA médio de {melhor_campeao[1]}"}
     
 def calculo_efetividade_por_campeao(lista_campeoes):
     total_campeao = {}

@@ -16,13 +16,17 @@ def main():
     tipo_processo = input("Digite sua escolha:")
     
     if tipo_processo == "1":
-        lol.get_worst_champions(nome, game_tag, 20)
+        quantidade_jogos = int(input("Insira a quantidade de jogos a serem consultados:"))
+        lol.get_worst_champions(nome, game_tag, quantidade_jogos)
         
     if tipo_processo == "2":
-        lol.get_best_champions(nome, game_tag, 20)
+        quantidade_jogos = int(input("Insira a quantidade de jogos a serem consultados:"))
+        lol.get_best_champions(nome, game_tag, quantidade_jogos)
         
     if tipo_processo == "3":
         lol.get_last_champions(match_ids, puuid)
 
-
-main()
+def teste():
+    lol.get_worst_champions("PowerPoint 2010", "OFFIC", 3)
+    
+teste()
