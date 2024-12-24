@@ -1,9 +1,10 @@
 import requests
+import pandas as pd
 from fastapi import FastAPI
 
 app = FastAPI()
 
-API_KEY = "RGAPI-c016c62a-c0c3-4c6d-9e37-dd9201442eb4"
+API_KEY = "RGAPI-cc058fdd-87dc-4149-9c1d-cff3e7bb22ae"
 REGION = "br1" 
 PLATFORM = "americas"
 
@@ -48,42 +49,28 @@ def get_last_champions(partidas, puuid):
 @app.get("/lol/piores-campeoes")
 def get_worst_champions(nome, game_tag, numero_partidas):
     rank = obtem_rank_campeoes(nome, game_tag, numero_partidas)
-    pior_campeao = next(iter(reversed(rank.items())))
-    print(f"Seu pior campeão foi {pior_campeao[0]}, com um KDA médio de {pior_campeao[1]}")
-    return {"message": f"Seu pior campeão foi {pior_campeao[0]}, com um KDA médio de {pior_campeao[1]}"}
+    print(f"Seu pior campeão foi {rank.iloc[-1]['campeao']}, com um KDA médio de {rank.iloc[-1]['media_kda']}")
+    return {"message": f"Seu pior campeão foi {rank.iloc[-1]['campeao']}, com um KDA médio de {rank.iloc[-1]['media_kda']}"}
 
 @app.get("/lol/melhores-campeoes")
 def get_best_champions(nome, game_tag, numero_partidas):
     rank = obtem_rank_campeoes(nome, game_tag, numero_partidas)
-    melhor_campeao = next(iter(rank.items()))
-    print(f"Seu melhor campeão foi {melhor_campeao[0]}, com um KDA médio de {melhor_campeao[1]}")
-    return {"message": f"Seu melhor campeão foi {melhor_campeao[0]}, com um KDA médio de {melhor_campeao[1]}"}
+    print(f"Seu melhor campeão foi {rank.iloc[0]['campeao']}, com um KDA médio de {rank.iloc[0]['media_kda']}")
+    return {"message": f"Seu melhor campeão foi {rank.iloc[0]['campeao']}, com um KDA médio de {rank.iloc[0]['media_kda']}"}
     
 def calculo_efetividade_por_campeao(lista_campeoes):
-    total_campeao = {}
-    
-    for registro in lista_campeoes:
-        campeao = registro['campeao']
-        kda = registro['kda']
-        
-        if campeao not in total_campeao:
-            total_campeao[campeao] = {'total_kda': 0, 'jogos': 0}
-            
-        total_campeao[campeao]['total_kda'] += kda
-        total_campeao[campeao]['jogos'] += 1
-    
-    medias_kda = {}
-    for campeao, dados in total_campeao.items():
-        medias_kda[campeao] = dados['total_kda'] / dados['jogos']
-    
-    rank_campeoes = dict(sorted(medias_kda.items(), key=lambda item: item[1], reverse=True))       
-    return rank_campeoes
+    resultado = lista_campeoes.groupby('campeao').agg(
+        total_kda=('kda', 'sum'), 
+        num_partidas=('kda', 'count'))
+
+    resultado['media_kda'] = resultado['total_kda'] / resultado['num_partidas']
+
+    return resultado.sort_values(by='media_kda', ascending=False).reset_index()
 
 def obtem_rank_campeoes(nome, game_tag, numero_partidas):    
     puuid = get_puuid(nome, game_tag)
     partidas = get_match_ids(puuid, numero_partidas)
-    
-    lista_campeoes = []
+    lista_campeoes = pd.DataFrame(columns=["campeao", "kda", "vitória"])
     
     for partida in partidas:
         detalhes = get_match_details(partida)
@@ -93,16 +80,16 @@ def obtem_rank_campeoes(nome, game_tag, numero_partidas):
         kills = invocador["kills"]
         deaths = invocador["deaths"]
         assists = invocador["assists"]
+
+        kda = (kills + assists) / deaths if deaths != 0 else kills + assists
+        kda = round(kda, 2)
         
-        kda = (kills + assists) / deaths
-        kda = round(kda,2)
-        
-        campeoes_utilizados = {"campeao": invocador["championName"],
-                                "kda": kda,
-                                "vitória": invocador["win"]}
-        
-        lista_campeoes.append(campeoes_utilizados)
-        
+        dados = [invocador["championName"], kda, invocador["win"]]
+        lista_campeoes.loc[len(lista_campeoes)] = dados
+
+        # usando .concat, que seria uma maneira de resposta mais rápida
+        # lista_campeoes = pd.concat([lista_campeoes, pd.DataFrame(dados, columns=lista_campeoes.columns)], ignore_index=True)
+    
     rank_campeoes = calculo_efetividade_por_campeao(lista_campeoes)
 
     return rank_campeoes
